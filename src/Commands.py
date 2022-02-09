@@ -4,11 +4,11 @@ import requests
 
 bot = commands.Bot(command_prefix='$')
 
-@bot.command(name='test')
-async def test(ctx):
+@bot.command(name='nigel')
+async def nigel(ctx):
     await ctx.send("Monky")
 
-bot.add_command(test)
+bot.add_command(nigel)
 
 @bot.command(name='createActivity')
 async def createActivity(ctx, activity_name):

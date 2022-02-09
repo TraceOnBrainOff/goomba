@@ -4,8 +4,19 @@
     connection: local
     tasks:
     
-    - name: "just execute a ls -lrt command"
-      shell: "ls -lrt"
-      register: "output"
-
-    - debug: var=output.stdout_lines
+    - name: "Install dependencies for voice chat support.":
+      apt:
+        pkg:
+          - libffi-dev
+          - libnacl-dev
+          - python3-dev
+        state: latest
+        update_cache: true
+    - name: "Create venv with required modules."
+      pip:
+        requirements: "requirements.txt"
+    - name: "Create a *.txt file with a token inside of it."
+      copy:
+        content: "{{ BOT_TOKEN }}"
+        dest: token.txt
+      

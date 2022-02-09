@@ -4,13 +4,13 @@ import requests
 
 bot = commands.Bot(command_prefix='$')
 
-@commands.command(name='test')
+@bot.command(name='test')
 async def test(ctx):
     await ctx.send("Monky")
 
 bot.add_command(test)
 
-@commands.command(name='createActivity')
+@bot.command(name='createActivity')
 async def createActivity(ctx, activity_name):
     token_file = open('token.txt')
     token = token_file.read() #Required for the authentication for whatever reason

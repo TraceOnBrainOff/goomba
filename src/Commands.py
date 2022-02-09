@@ -4,13 +4,11 @@ import requests
 
 bot = commands.Bot(command_prefix='$')
 
-@bot.command(name='nigel')
+@bot.command(name='nigel', pass_context=True)
 async def nigel(ctx):
     await ctx.send("Monky")
 
-bot.add_command(nigel)
-
-@bot.command(name='createActivity')
+@bot.command(name='createActivity', pass_context=True)
 async def createActivity(ctx, activity_name):
     token_file = open('token.txt')
     token = token_file.read() #Required for the authentication for whatever reason
@@ -42,5 +40,3 @@ async def createActivity(ctx, activity_name):
             print("Bot lacks the perms to do this.")
         await ctx.send("https://discord.com/invite/{0}".format(invite.code))
     activities_file.close()
-
-bot.add_command(createActivity)

@@ -4,7 +4,7 @@
     connection: local
     tasks:
     
-    - name: "Install dependencies for voice chat support.":
+    - name: "Install dependencies for voice chat support."
       apt:
         pkg:
           - libffi-dev

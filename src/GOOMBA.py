@@ -1,6 +1,6 @@
 import discord
 import json
-import Commands
+from . import Commands
 
 class GOOMBA_AutoShardedClient(discord.AutoShardedClient):
     async def on_ready(self):

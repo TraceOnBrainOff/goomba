@@ -4,7 +4,10 @@
     connection: local
     become: yes
     tasks:
-    
+    - name: "Get current directory"
+      shell: pwd
+      register: playbook_path_output
+    - debug: var=playbook_path_output.stdout
     - name: "Install dependencies for voice chat support."
       apt:
         pkg:
@@ -15,11 +18,11 @@
         update_cache: true
     - name: "Create venv with required modules."
       pip:
-        requirements: "requirements.txt"
-        virtualenv: ".venv"
+        requirements: "{{ playbook_path_output }}/requirements.txt"
+        virtualenv: "{{ playbook_path_output }}/.venv"
         virtualenv_python: python3
     - name: "Create a *.txt file with a token inside of it."
       copy:
         content: "{{ BOT_TOKEN }}"
-        dest: "token.txt"
+        dest: "{{ playbook_path_output }}/token.txt"
       

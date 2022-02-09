@@ -4,10 +4,6 @@
     connection: local
     become: yes
     tasks:
-    - name: "Get current directory"
-      shell: pwd
-      register: playbook_path_output
-    - debug: var=playbook_path_output.stdout
     - name: "Install dependencies for voice chat support."
       apt:
         pkg:
@@ -25,4 +21,9 @@
       copy:
         content: "{{ BOT_TOKEN }}"
         dest: "{{ playbook_path_output.stdout }}/token.txt"
+    - name: "Create a shell script for running the bot"
+      copy:
+        content: ".venv/bin/python3 main.py"
+        dest: "{{ playbook_path_output.stdout }}/run.sh"
+        mode: '0751'
       

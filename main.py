@@ -1,6 +1,8 @@
 import discord
 import json
 
+print("AHAHAHAH")
+
 class MyClient(discord.Client):
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))

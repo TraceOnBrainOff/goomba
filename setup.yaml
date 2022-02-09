@@ -2,6 +2,7 @@
   - name: "Setup for the GOOMBA bot."
     hosts: localhost
     connection: local
+    become: yes
     tasks:
     
     - name: "Install dependencies for voice chat support."

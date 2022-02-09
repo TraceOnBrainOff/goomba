@@ -1,8 +1,6 @@
 import discord
 import json
 
-print("AHAHAHAH")
-
 class MyClient(discord.Client):
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))
@@ -15,4 +13,5 @@ client = MyClient()
 token_file = open('token.txt')
 token = token_file.read()
 token_file.close()
+print(token)
 client.run(token)

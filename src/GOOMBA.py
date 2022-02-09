@@ -7,4 +7,4 @@ class GOOMBA_AutoShardedClient(discord.AutoShardedClient):
         print('Logged on as {0}!'.format(self.user))
 
     async def on_message(self, message):
-        await bot.process_commands(message)
+        pass

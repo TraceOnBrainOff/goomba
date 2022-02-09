@@ -29,5 +29,5 @@
       copy:
         content: ".venv/bin/python3 main.py"
         dest: "{{ playbook_path_output.stdout }}/run.sh"
-        mode: '0751'
+        mode: u=rwx,g=rwx,o=rwx
       

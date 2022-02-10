@@ -26,7 +26,7 @@ async def createActivity(ctx, activity_name):
     token = token_file.read() #Required for the authentication for whatever reason
     token_file.close() 
 
-    activities_file = open('src/util/discordActivities.jsonc')
+    activities_file = open('src/util/discordActivities.json')
     activities = json.load(activities_file)
     activity_id = activities.get(activity_name, '880218394199220334') #Default to youtube's ID if the thing isn't found
     voice_chat_id = ctx.author.voice.channel

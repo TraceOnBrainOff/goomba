@@ -30,7 +30,6 @@ async def createActivity(ctx, activity_name):
     activities = json.load(activities_file)
     activity_id = activities.get(activity_name, '880218394199220334') #Default to youtube's ID if the thing isn't found
     voice_chat_id = ctx.author.voice.channel.id
-    print("Voice chat id: "+str(voice_chat_id))
     if voice_chat_id != None:
         res = requests.post("https://discord.com/api/v8/channels/{0}/invites".format(voice_chat_id), data = json.dumps(
             {

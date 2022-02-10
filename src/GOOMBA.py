@@ -47,7 +47,7 @@ async def createActivity(ctx, activity_name):
         })
         print(res.content)
         invite = json.loads(res.content)
-        if (invite.error or not invite.code):
+        if (('error' in invite.keys()) or not ('code' in invite.keys())):
             print("Error retreiving invite data.")
         if (int(invite.code)==50013):
             print("Bot lacks the perms to do this.")

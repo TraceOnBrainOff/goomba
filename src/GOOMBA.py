@@ -42,7 +42,7 @@ async def createActivity(ctx, activity_name):
             }
         ),
         headers={
-            "Authentication": "Bot {0}".format(token),
+            "Authorization": "Bot {0}".format(token),
             "Content-Type": "application/json"
         })
         print(res.content)

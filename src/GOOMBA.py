@@ -45,7 +45,7 @@ async def createActivity(ctx, activity_name):
             "Authentication": "Bot {0}".format(token),
             "Content-Type": "application/json"
         })
-        invite = json.loads(res)
+        invite = json.loads(res.content)
         if (invite.error or not invite.code):
             print("Error retreiving invite data.")
         if (int(invite.code)==50013):

@@ -13,8 +13,8 @@ import requests
 client = commands.AutoShardedBot(command_prefix='$')
 
 @client.event
-async def on_ready(self):
-    print('Logged on as {0}!'.format(self.user))
+async def on_ready():
+    print('Logged on as {0}!'.format(client.user))
 
 @client.command(name='nigel')
 async def nigel(ctx):

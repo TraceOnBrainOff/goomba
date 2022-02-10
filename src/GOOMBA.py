@@ -49,7 +49,5 @@ async def createActivity(ctx, activity_name):
         invite = json.loads(res.content)
         if (('error' in invite.keys()) or not ('code' in invite.keys())):
             print("Error retreiving invite data.")
-        if (int(invite['code'])==50013):
-            print("Bot lacks the perms to do this.")
         await ctx.send("https://discord.com/invite/{0}".format(invite['code']))
     activities_file.close()

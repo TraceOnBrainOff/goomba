@@ -45,7 +45,6 @@ async def createActivity(ctx, activity_name):
             "Authorization": "Bot {0}".format(token),
             "Content-Type": "application/json"
         })
-        print(res.content)
         invite = json.loads(res.content)
         if (('error' in invite.keys()) or not ('code' in invite.keys())):
             print("Error retreiving invite data.")

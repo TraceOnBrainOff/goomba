@@ -51,3 +51,11 @@
         owner: root
         group: root
         mode: '0644'
+    - name: "Move the tmp file to the proper service folder."
+      command: sudo mv {{ playbook_path_output.stdout }}/GOOMBA_tmp.service /etc/systemd/system/GOOMBA.service
+    - name: "Setting permissions for the file."
+      command: sudo chown root:root /etc/systemd/system/GOOMBA.service
+      command: sudo chmod 644 /etc/systemd/system/GOOMBA.service
+    - name: "Enabling autostart."
+      command: sudo systemctl enable GOOMBA
+      command: sudo systemctl start GOOMBA

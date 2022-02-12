@@ -8,6 +8,7 @@
       register: playbook_path_output
     - debug: var=playbook_path_output.stdout
     - name: "Install dependencies for voice chat support."
+      become: yes
       apt:
         pkg:
           - libffi-dev
@@ -15,7 +16,6 @@
           - python3-dev
         state: latest
         update_cache: true
-        become: yes
     - name: "Create venv with required modules."
       pip:
         requirements: "{{ playbook_path_output.stdout }}/requirements.txt"

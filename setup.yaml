@@ -47,7 +47,7 @@
       lineinfile:
         path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
         regexp: 'ExecStart'
-        line: "ExecStart=.venv/bin/python3 run.py"
+        line: "ExecStart=.venv/bin/python3 main.py"
         owner: root
         group: root
         mode: '0644'

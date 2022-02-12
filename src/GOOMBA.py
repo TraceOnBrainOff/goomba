@@ -16,19 +16,19 @@ client = commands.AutoShardedBot(command_prefix='$')
 async def on_ready():
     print('Logged on as {0}!'.format(client.user))
 
-@client.command(name='nigel')
+@client.command()
 async def nigel(ctx):
     await ctx.send("Monky")
 
-@client.command(name='createActivity')
-async def createActivity(ctx, activity_name):
+@client.command()
+async def createActivity(ctx, activity_name='youtube'):
     token_file = open('token.txt')
     token = token_file.read() #Required for the authentication for whatever reason
     token_file.close() 
 
     activities_file = open('src/util/discordActivities.json')
     activities = json.load(activities_file)
-    activity_id = activities.get(activity_name, '880218394199220334') #Default to youtube's ID if the thing isn't found
+    activity_id = activities.get(activity_name)
     voice_chat_id = ctx.author.voice.channel.id
     if voice_chat_id != None:
         res = requests.post("https://discord.com/api/v8/channels/{0}/invites".format(voice_chat_id), data = json.dumps(

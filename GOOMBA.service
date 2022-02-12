@@ -1,0 +1,10 @@
+[Unit]
+Description=GOOMBA Discord Bot
+
+[Service]
+WorkingDirectory=temp
+ExecStart=temp
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

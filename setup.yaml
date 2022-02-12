@@ -30,4 +30,24 @@
         content: ".venv/bin/python3 main.py"
         dest: "{{ playbook_path_output.stdout }}/run.sh"
         mode: u=rwx,g=rwx,o=rwx
-      
+    - name: "Create a copy of the template *.service file"
+      copy:
+        src: "{{ playbook_path_output.stdout }}/GOOMBA.service"
+        dest: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
+        mode: u=rwx,g=rwx,o=rwx
+    - name: "Replace the working directory in the *.service file."
+      lineinfile:
+        path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
+        search_string: 'WorkingDirectory'
+        line: "WorkingDirectory={{ playbook_path_output.stdout }}"
+        owner: root
+        group: root
+        mode: '0644'
+    - name: "Replace the ExecStart param in the *.service file."
+      lineinfile:
+        path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
+        search_string: 'ExecStart'
+        line: "ExecStart={{ playbook_path_output.stdout }}/.venv/bin/python3 {{ playbook_path_output.stdout }}/run.py"
+        owner: root
+        group: root
+        mode: '0644'

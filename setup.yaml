@@ -47,6 +47,12 @@
         regexp: 'ExecStart'
         line: "ExecStart={{ playbook_path_output.stdout }}/venv/bin/python3 {{ playbook_path_output.stdout }}/main.py"
         mode: '0644'
+    - name: "Replace the ExecStart param in the *.service file."
+      lineinfile:
+        path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
+        regexp: 'ExecStartPre'
+        line: "ExecStartPre={{ playbook_path_output.stdout }}/venv/bin/activate"
+        mode: '0644'
     - name: "Move the tmp file to the proper service folder."
       command: mv {{ playbook_path_output.stdout }}/GOOMBA_tmp.service /etc/systemd/system/GOOMBA.service
       become: yes

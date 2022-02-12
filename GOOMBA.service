@@ -3,7 +3,7 @@ Description=GOOMBA Discord Bot
 After=network.target
 
 [Service]
-User=root
+User=pi
 WorkingDirectory=temp
 ExecStartPre=temp
 ExecStart=temp

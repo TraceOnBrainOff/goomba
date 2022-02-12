@@ -2,7 +2,6 @@
   - name: "Setup for the GOOMBA bot."
     hosts: localhost
     connection: local
-    become: yes
     tasks:
     - name: Find out playbook's path
       shell: pwd
@@ -16,13 +15,12 @@
           - python3-dev
         state: latest
         update_cache: true
+        become: yes
     - name: "Create venv with required modules."
-      become: no
       pip:
         requirements: "{{ playbook_path_output.stdout }}/requirements.txt"
         virtualenv: "{{ playbook_path_output.stdout }}/venv"
         virtualenv_python: python3
-      become: yes
     - name: "Create a *.txt file with a token inside of it."
       copy:
         content: "{{ BOT_TOKEN }}"
@@ -57,10 +55,11 @@
         mode: '0644'
     - name: "Move the tmp file to the proper service folder."
       command: mv {{ playbook_path_output.stdout }}/GOOMBA_tmp.service /etc/systemd/system/GOOMBA.service
+      become: yes
     - name: "Setting permissions for the file."
-      command: chown root:root /etc/systemd/system/GOOMBA.service
       command: chmod 644 /etc/systemd/system/GOOMBA.service
     - name: "Enabling autostart."
       command: systemctl daemon-reload
       command: systemctl enable GOOMBA
       command: systemctl start GOOMBA
+      become: yes

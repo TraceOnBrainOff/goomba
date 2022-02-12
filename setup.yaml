@@ -19,7 +19,7 @@
     - name: "Create venv with required modules."
       pip:
         requirements: "{{ playbook_path_output.stdout }}/requirements.txt"
-        virtualenv: "{{ playbook_path_output.stdout }}/.venv"
+        virtualenv: "{{ playbook_path_output.stdout }}/venv"
         virtualenv_python: python3
     - name: "Create a *.txt file with a token inside of it."
       copy:
@@ -27,7 +27,7 @@
         dest: "{{ playbook_path_output.stdout }}/token.txt"
     - name: "Create a shell script for running the bot"
       copy:
-        content: ".venv/bin/python3 main.py"
+        content: "venv/bin/python3 main.py"
         dest: "{{ playbook_path_output.stdout }}/run.sh"
         mode: u=rwx,g=rwx,o=rwx
     - name: "Create a copy of the template *.service file"
@@ -45,13 +45,13 @@
       lineinfile:
         path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
         regexp: 'ExecStart'
-        line: "ExecStart={{ playbook_path_output.stdout }}/.venv/bin/python3 {{ playbook_path_output.stdout }}/main.py"
+        line: "ExecStart={{ playbook_path_output.stdout }}/venv/bin/python3 {{ playbook_path_output.stdout }}/main.py"
         mode: '0644'
     - name: "Replace the ExecStart param in the *.service file."
       lineinfile:
         path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
         regexp: 'ExecStartPre'
-        line: "ExecStartPre={{ playbook_path_output.stdout }}/.venv/bin/activate"
+        line: "ExecStartPre={{ playbook_path_output.stdout }}/venv/bin/activate"
         mode: '0644'
     - name: "Move the tmp file to the proper service folder."
       command: mv {{ playbook_path_output.stdout }}/GOOMBA_tmp.service /etc/systemd/system/GOOMBA.service

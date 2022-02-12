@@ -3,9 +3,7 @@ Description=GOOMBA Discord Bot
 After=network.target
 
 [Service]
-User=pi
 WorkingDirectory=temp
-ExecStartPre=temp
 ExecStart=temp
 RestartSec=5s
 Restart=on-failure

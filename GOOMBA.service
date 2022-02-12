@@ -1,10 +1,9 @@
 [Unit]
 Description=GOOMBA Discord Bot
 After=network.target
-StartLimitIntervalSec=0
 
 [Service]
-User=pi
+User=root
 WorkingDirectory=temp
 ExecStartPre=temp
 ExecStart=temp

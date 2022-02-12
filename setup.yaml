@@ -57,5 +57,6 @@
       command: chown root:root /etc/systemd/system/GOOMBA.service
       command: chmod 644 /etc/systemd/system/GOOMBA.service
     - name: "Enabling autostart."
+      command: systemctl daemon-reload
       command: systemctl enable GOOMBA
       command: systemctl start GOOMBA

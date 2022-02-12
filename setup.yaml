@@ -17,11 +17,12 @@
         state: latest
         update_cache: true
     - name: "Create venv with required modules."
+      become: no
       pip:
         requirements: "{{ playbook_path_output.stdout }}/requirements.txt"
         virtualenv: "{{ playbook_path_output.stdout }}/venv"
         virtualenv_python: python3
-        become: no
+      become: yes
     - name: "Create a *.txt file with a token inside of it."
       copy:
         content: "{{ BOT_TOKEN }}"

@@ -47,15 +47,15 @@
       lineinfile:
         path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
         regexp: 'ExecStart'
-        line: "ExecStart={{ playbook_path_output.stdout }}/.venv/bin/python3 {{ playbook_path_output.stdout }}/run.py"
+        line: "ExecStart=.venv/bin/python3 run.py"
         owner: root
         group: root
         mode: '0644'
     - name: "Move the tmp file to the proper service folder."
-      command: sudo mv {{ playbook_path_output.stdout }}/GOOMBA_tmp.service /etc/systemd/system/GOOMBA.service
+      command: mv {{ playbook_path_output.stdout }}/GOOMBA_tmp.service /etc/systemd/system/GOOMBA.service
     - name: "Setting permissions for the file."
-      command: sudo chown root:root /etc/systemd/system/GOOMBA.service
-      command: sudo chmod 644 /etc/systemd/system/GOOMBA.service
+      command: chown root:root /etc/systemd/system/GOOMBA.service
+      command: chmod 644 /etc/systemd/system/GOOMBA.service
     - name: "Enabling autostart."
-      command: sudo systemctl enable GOOMBA
-      command: sudo systemctl start GOOMBA
+      command: systemctl enable GOOMBA
+      command: systemctl start GOOMBA

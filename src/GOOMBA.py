@@ -10,7 +10,7 @@ import requests
 #    async def on_message(self, message):
 #        pass
 
-client = commands.AutoShardedBot(command_prefix='$')
+client = commands.AutoShardedBot(command_prefix='&')
 
 @client.event
 async def on_ready():

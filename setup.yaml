@@ -20,7 +20,7 @@
       pip:
         requirements: "{{ playbook_path_output.stdout }}/requirements.txt"
         virtualenv: "{{ playbook_path_output.stdout }}/venv"
-        virtualenv_python: python3
+        virtualenv_command: 'python3 -m venv'
     - name: "Create a *.txt file with a token inside of it."
       copy:
         content: "{{ BOT_TOKEN }}"

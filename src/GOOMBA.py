@@ -50,3 +50,27 @@ async def createActivity(ctx, activity_name='youtube'):
             print("Error retreiving invite data.")
         await ctx.send("https://discord.com/invite/{0}".format(invite['code']))
     activities_file.close()
+
+@client.command()
+async def shitpost(ctx, text=None):
+    if text == None:
+        text = "I HAVE PEERED INTO THE ABYSS AND FOUND THE ANSWERS I SEEK."
+    voice_channel = ctx.author.channel
+    channel = None
+    if voice_channel != None:
+        #Query the VFProxy
+        #Process the resulting string
+        #Convert the mp3 file with ffmpeg to 441000 and 2 channels
+        #Mix with pledge of demon in /assets
+        #Play
+        channel = voice_channel.name
+        vc = await voice_channel.connect()
+        vc.play(discord.FFmpegPCMAudio(executable="C:/ffmpeg/bin/ffmpeg.exe", source="C:<path_to_file>"))
+        # Sleep while audio is playing.
+        while vc.is_playing():
+            sleep(.1)
+        await vc.disconnect()
+    else:
+        await ctx.send(str(ctx.author.name) + "is not in a channel.")
+    # Delete command after the audio is done playing.
+    await ctx.message.delete()

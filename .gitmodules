@@ -1,0 +1,3 @@
+[submodule "VFProxy"]
+	path = VFProxy
+	url = git@github.com:TraceOnBrainOff/VFProxy.git

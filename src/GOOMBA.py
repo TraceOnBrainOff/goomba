@@ -7,6 +7,7 @@ import datetime
 import subprocess as sp
 import os
 import time
+import random
 
 #class GOOMBA_AutoShardedBot(discord.AutoShardedBot):
 #    async def on_ready(self):
@@ -58,7 +59,7 @@ async def shitpost(ctx, *args):
         #Join all arguments into a single message
         text = " ".join(args[:])
         if text == "":
-            text = "I HAVE PEERED INTO THE ABYSS AND FOUND THE ANSWERS I SEEK."
+            text = "I HAVE PEERED INTO THE ABYSS AND I HAVE FOUND THE ANSWERS I SEEK."
         #Query the VFProxy
         original_wd = os.getcwd()
         os.chdir("VFProxy")
@@ -74,13 +75,16 @@ async def shitpost(ctx, *args):
         today = datetime.datetime.now()
         file_name = str("shitpost_{0}".format(today.strftime("%m-%d-%Y %H-%M-%S")))
         ffmpegcommand_out = sp.run(
-            "ffmpeg -i \"{0}\" -ar 44100 -ac 2 \"{1}.mp3\"".format(mp3_location, file_name),
+            "ffmpeg -i \"{0}\" -ar 48000 -ac 2 \"{1}.mp3\"".format(mp3_location, file_name),
             shell = True
         )
         #Mix with pledge of demon in /assets for resulting file
         os.chdir(original_wd)
+        playlist_dir = "assets/properplaylist"
+        background_track = random.choice(os.listdir(playlist_dir))
+        background_track_path = os.path.join(playlist_dir, background_track)
         soxcommand_out = sp.run(
-            "sox -m \"VFProxy/{0}.mp3\" assets/pl.mp3 \"assets/{0}.mp3\" trim 0 `soxi -D \"VFProxy/{0}.mp3\"`".format(file_name),
+            "sox -m \"VFProxy/{0}.mp3\" \"{1}\" \"assets/{0}.mp3\" trim 0 `soxi -D \"VFProxy/{0}.mp3\"`".format(file_name, background_track_path),
             shell = True
         )
         #Play

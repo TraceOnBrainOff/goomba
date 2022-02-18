@@ -2,6 +2,11 @@ import discord
 from discord.ext import commands
 import json
 import requests
+import re
+import datetime
+import subprocess as sp
+import os
+import time
 
 #class GOOMBA_AutoShardedBot(discord.AutoShardedBot):
 #    async def on_ready(self):
@@ -52,25 +57,44 @@ async def createActivity(ctx, activity_name='youtube'):
     activities_file.close()
 
 @client.command()
-async def shitpost(ctx, text=None):
-    if text == None:
+async def shitpost(ctx, *args):
+    text = " ".join(args[:])
+    if text == "":
         text = "I HAVE PEERED INTO THE ABYSS AND FOUND THE ANSWERS I SEEK."
-    voice_channel = ctx.author.channel
+    voice_channel = ctx.author.voice.channel
     channel = None
     if voice_channel != None:
         #Query the VFProxy
+        original_wd = os.getcwd()
+        os.chdir("VFProxy")
+        vfcommand_out = sp.run(
+            "venv/bin/python3 main.py -voice_name Shouty -encode -no_save_wav -text \"{0}\"".format(text),
+            shell = True,
+            text = True,
+            capture_output = True
+        )
         #Process the resulting string
-        #Convert the mp3 file with ffmpeg to 441000 and 2 channels
-        #Mix with pledge of demon in /assets
+        mp3_location = re.findall(r"(?<=MP3_LOCATION:).*", vfcommand_out.stdout)[0]
+        #Convert the mp3 file with ffmpeg to 44100 and 2 channels
+        today = datetime.datetime.now()
+        file_name = str("shitpost_{0}".format(today.strftime("%m-%d-%Y %H-%M-%S")))
+        ffmpegcommand_out = sp.run(
+            "ffmpeg -i \"{0}\" -ar 44100 -ac 2 {1}.mp3".format(mp3_location, file_name),
+            shell = True
+        )
+        #Mix with pledge of demon in /assets for resulting file
+        os.chdir(original_wd)
+        soxcommand_out = sp.run(
+            "sox -m \"VFProxy/{0}.mp3\" /assets/pl.mp3 \"/assets/{0}.mp3\" trim 0 `soxi -D \"{0}.mp3\"`".format(file_name),
+            shell = True
+        )
         #Play
         channel = voice_channel.name
         vc = await voice_channel.connect()
-        vc.play(discord.FFmpegPCMAudio(executable="C:/ffmpeg/bin/ffmpeg.exe", source="C:<path_to_file>"))
+        vc.play(discord.FFmpegPCMAudio(executable="ffmpeg", source="\"/assets/{0}.mp3\""))
         # Sleep while audio is playing.
         while vc.is_playing():
-            sleep(.1)
+            time.sleep(.1)
         await vc.disconnect()
     else:
         await ctx.send(str(ctx.author.name) + "is not in a channel.")
-    # Delete command after the audio is done playing.
-    await ctx.message.delete()

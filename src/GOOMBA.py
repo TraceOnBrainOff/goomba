@@ -8,6 +8,7 @@ import subprocess as sp
 import os
 import time
 import random
+import math
 
 #class GOOMBA_AutoShardedBot(discord.AutoShardedBot):
 #    async def on_ready(self):
@@ -60,27 +61,45 @@ async def shitpost(ctx, *args):
         text = " ".join(args[:])
         if text == "":
             text = "I HAVE PEERED INTO THE ABYSS AND I HAVE FOUND THE ANSWERS I SEEK."
+        text.replace("\"", "")
+        text.replace("\'", "")
+        text.replace("’", "")
+        
         #Query the VFProxy
         original_wd = os.getcwd()
         os.chdir("VFProxy")
-        vfcommand_out = sp.run(
-            "venv/bin/python3 main.py -voice_name Shouty -encode -no_save_wav -text \"{0}\"".format(text),
-            shell = True,
-            text = True,
-            capture_output = True
-        )
-        #Process the resulting string
-        mp3_location = re.findall(r"(?<=MP3_LOCATION:).*", vfcommand_out.stdout)[0]
-        #Convert the mp3 file with ffmpeg to 44100 and 2 channels
+        #Split apart the message into sub-messages with a max size of 512 (VoiceForge's API goes apeshit)
+        curr_size = len(text)
+        max_size = 512
+        n_files = math.ceil(curr_size/max_size)
+        mp3_locations = []
+        for i in range(n_files):
+            sub_text = text[(max_size*i):(max_size*(i+1))]
+            vfcommand_out = sp.run(
+                "venv/bin/python3 main.py -voice_name Shouty -encode -no_save_wav -text \"{0}\"".format(sub_text),
+                shell = True,
+                text = True,
+                capture_output = True
+            )
+            #Process the resulting string
+            mp3_location = re.findall(r"(?<=MP3_LOCATION:).*", vfcommand_out.stdout)[0]
+            mp3_locations.append("\"{0}\"".format(mp3_location))
         today = datetime.datetime.now()
+        concat_file_name = str("concat_{0}".format(today.strftime("%m-%d-%Y %H-%M-%S")))
+        concatsox_out = sp.run(
+            "sox {0} \"{1}.mp3\"".format(" ".join(mp3_locations[:]), concat_file_name),
+            shell = True
+        )
+        #Convert the mp3 file with ffmpeg to 44100 and 2 channels
+        
         file_name = str("shitpost_{0}".format(today.strftime("%m-%d-%Y %H-%M-%S")))
         ffmpegcommand_out = sp.run(
-            "ffmpeg -i \"{0}\" -ar 48000 -ac 2 \"{1}.mp3\"".format(mp3_location, file_name),
+            "ffmpeg -i \"{0}.mp3\" -ar 48000 -ac 2 \"{1}.mp3\"".format(concat_file_name, file_name),
             shell = True
         )
         #Mix with pledge of demon in /assets for resulting file
         os.chdir(original_wd)
-        playlist_dir = "assets/properplaylist"
+        playlist_dir = "assets/dw_playlist/processed"
         background_track = random.choice(os.listdir(playlist_dir))
         background_track_path = os.path.join(playlist_dir, background_track)
         soxcommand_out = sp.run(
@@ -98,6 +117,11 @@ async def shitpost(ctx, *args):
         await vc.disconnect()
         os.system("rm \"assets/{0}.mp3\"".format(file_name)) #clean up
         os.system("rm \"VFProxy/{0}.mp3\"".format(file_name)) #clean up
-        os.system("rm \"VFProxy/{0}\"".format(mp3_location)) #clean up
+        os.system("rm \"VFProxy/{0}.mp3\"".format(concat_file_name)) #clean up
+        for mp3_location in mp3_locations:
+            original_wd = os.getcwd()
+            os.chdir("VFProxy")
+            os.system("rm {0}".format(mp3_location)) #clean up
+            os.chdir(original_wd)
     else:
         await ctx.send(str(ctx.author.name) + "is not in a channel.")

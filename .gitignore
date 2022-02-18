@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 run.sh
 token.txt
+assets/dw_playlist/downloaded
+assets/dw_playlist/processed

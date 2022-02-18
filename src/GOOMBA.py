@@ -22,10 +22,6 @@ async def on_ready():
     print('Logged on as {0}!'.format(client.user))
 
 @client.command()
-async def nigel(ctx):
-    await ctx.send("Monky")
-
-@client.command()
 async def createActivity(ctx, activity_name='youtube'):
     token_file = open('token.txt')
     token = token_file.read() #Required for the authentication for whatever reason
@@ -58,12 +54,11 @@ async def createActivity(ctx, activity_name='youtube'):
 
 @client.command()
 async def shitpost(ctx, *args):
-    text = " ".join(args[:])
-    if text == "":
-        text = "I HAVE PEERED INTO THE ABYSS AND FOUND THE ANSWERS I SEEK."
-    voice_channel = ctx.author.voice.channel
-    channel = None
-    if voice_channel != None:
+    if ctx.author.voice != None:
+        #Join all arguments into a single message
+        text = " ".join(args[:])
+        if text == "":
+            text = "I HAVE PEERED INTO THE ABYSS AND FOUND THE ANSWERS I SEEK."
         #Query the VFProxy
         original_wd = os.getcwd()
         os.chdir("VFProxy")
@@ -89,7 +84,7 @@ async def shitpost(ctx, *args):
             shell = True
         )
         #Play
-        channel = voice_channel.name
+        voice_channel = ctx.author.voice.channel
         vc = await voice_channel.connect()
         full_dir = os.path.join(original_wd, "assets", "{0}.mp3".format(file_name))
         vc.play(discord.FFmpegPCMAudio(executable="ffmpeg", source=full_dir))
@@ -99,5 +94,6 @@ async def shitpost(ctx, *args):
         await vc.disconnect()
         os.system("rm \"assets/{0}.mp3\"".format(file_name)) #clean up
         os.system("rm \"VFProxy/{0}.mp3\"".format(file_name)) #clean up
+        os.system("rm \"VFProxy/{0}\"".format(mp3_location)) #clean up
     else:
         await ctx.send(str(ctx.author.name) + "is not in a channel.")

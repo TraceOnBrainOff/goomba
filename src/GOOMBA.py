@@ -79,22 +79,25 @@ async def shitpost(ctx, *args):
         today = datetime.datetime.now()
         file_name = str("shitpost_{0}".format(today.strftime("%m-%d-%Y %H-%M-%S")))
         ffmpegcommand_out = sp.run(
-            "ffmpeg -i \"{0}\" -ar 44100 -ac 2 {1}.mp3".format(mp3_location, file_name),
+            "ffmpeg -i \"{0}\" -ar 44100 -ac 2 \"{1}.mp3\"".format(mp3_location, file_name),
             shell = True
         )
         #Mix with pledge of demon in /assets for resulting file
         os.chdir(original_wd)
         soxcommand_out = sp.run(
-            "sox -m \"VFProxy/{0}.mp3\" /assets/pl.mp3 \"/assets/{0}.mp3\" trim 0 `soxi -D \"{0}.mp3\"`".format(file_name),
+            "sox -m \"VFProxy/{0}.mp3\" assets/pl.mp3 \"assets/{0}.mp3\" trim 0 `soxi -D \"VFProxy/{0}.mp3\"`".format(file_name),
             shell = True
         )
         #Play
         channel = voice_channel.name
         vc = await voice_channel.connect()
-        vc.play(discord.FFmpegPCMAudio(executable="ffmpeg", source="\"/assets/{0}.mp3\""))
+        full_dir = os.path.join(original_wd, "assets", "{0}.mp3".format(file_name))
+        vc.play(discord.FFmpegPCMAudio(executable="ffmpeg", source=full_dir))
         # Sleep while audio is playing.
         while vc.is_playing():
-            time.sleep(.1)
+            time.sleep(1)
         await vc.disconnect()
+        os.system("rm \"assets/{0}.mp3\"".format(file_name)) #clean up
+        os.system("rm \"VFProxy/{0}.mp3\"".format(file_name)) #clean up
     else:
         await ctx.send(str(ctx.author.name) + "is not in a channel.")

@@ -95,7 +95,7 @@ async def shitpost(ctx, *args):
         vc.play(discord.FFmpegPCMAudio(executable="ffmpeg", source=full_dir))
         # Sleep while audio is playing.
         while vc.is_playing():
-            time.sleep(1)
+            time.sleep(5)
         await vc.disconnect()
         os.system("rm \"assets/{0}.mp3\"".format(file_name)) #clean up
         os.system("rm \"VFProxy/{0}.mp3\"".format(file_name)) #clean up

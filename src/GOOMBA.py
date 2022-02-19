@@ -9,19 +9,17 @@ import os
 import time
 import random
 import math
+from .Music import WaveMusic
 
-#class GOOMBA_AutoShardedBot(discord.AutoShardedBot):
-#    async def on_ready(self):
-#        print('Logged on as {0}!'.format(self.user))
-#
-#    async def on_message(self, message):
-#        pass
+class Bot(commands.AutoShardedBot):
+    def __init__(self):
+        super().__init__(command_prefix='&')
 
-client = commands.AutoShardedBot(command_prefix='&')
+    async def on_ready(self):
+        print('Logged on as {0}!'.format(self.user))
 
-@client.event
-async def on_ready():
-    print('Logged on as {0}!'.format(client.user))
+client = Bot()
+client.add_cog(WaveMusic(client))
 
 @client.command()
 async def createActivity(ctx, activity_name='youtube'):
@@ -61,10 +59,11 @@ async def shitpost(ctx, *args):
         text = " ".join(args[:])
         if text == "":
             text = "I HAVE PEERED INTO THE ABYSS AND I HAVE FOUND THE ANSWERS I SEEK."
+        encoded_text = text.encode("ascii", "ignore")
+        text = encoded_text.decode() #Hacky code to remove non ascii characters because the api doesn't like it
         text.replace("\"", "")
         text.replace("\'", "")
-        text.replace("’", "")
-        
+        text.replace("’", "") #Discord.py doesn't like quotations of any kind in arguments
         #Query the VFProxy
         original_wd = os.getcwd()
         os.chdir("VFProxy")

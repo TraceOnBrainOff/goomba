@@ -14,6 +14,7 @@
           - libffi-dev
           - libnacl-dev
           - python3-dev
+          - default-jdk
         state: latest
         update_cache: true
     - name: "Create venv with required modules."

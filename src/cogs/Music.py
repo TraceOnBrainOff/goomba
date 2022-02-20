@@ -23,8 +23,6 @@ class VoiceState:
         if self.is_playing():
             self.player.stop()
 
-    def toggle_next(self):
-        self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
 
 class WaveMusic(commands.Cog):
     """Music cog to hold Wavelink related commands and listeners."""

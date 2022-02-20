@@ -8,7 +8,6 @@ class VoiceState:
     def __init__(self, bot):
         self.voice: wavelink.Player = None
         self.bot = bot
-        self.songs = wavelink.Queue()
         self.original_channel: discord.TextChannel = None
 
     def is_playing(self):
@@ -26,13 +25,6 @@ class VoiceState:
 
     def toggle_next(self):
         self.bot.loop.call_soon_threadsafe(self.play_next_song.set)
-    
-    @commands.Cog.listener()
-    async def on_wavelink_track_end(player: wavelink.Player, track: wavelink.Track, reason):
-        """Event fired when a song has ended."""
-        if not player.state.songs.is_empty(): #if there's something in the queue
-            new_track = await player.play(player.state.songs.pop())
-            await player.state.original_channel.send(f'**Now playing:** `{new_track.title}` Requested by: `{new_track.requested_by}`')
 
 class WaveMusic(commands.Cog):
     """Music cog to hold Wavelink related commands and listeners."""
@@ -64,6 +56,13 @@ class WaveMusic(commands.Cog):
         """Event fired when a node has finished connecting."""
         print(f'Node: <{node.identifier}> is ready!')
 
+    @commands.Cog.listener()
+    async def on_wavelink_track_end(self, player, track, reason):
+        """Event fired when a song has ended."""
+        track = await player.queue.get_wait()
+        await player.play(track)
+        
+
     @commands.command(pass_context=True, no_pm=True)
     async def join(self, ctx: commands.Context):
         #check if the author is in vc
@@ -77,7 +76,6 @@ class WaveMusic(commands.Cog):
         state = self.get_voice_state(ctx.message.guild)
         if state.voice is None:
             state.voice = await summoned_channel.connect(cls=wavelink.Player)
-            setattr(state.voice, "state", state) #very fucking weird reference fuckery necessary for later listener manipulation
         else:
             await state.voice.move_to(summoned_channel)
         state.original_channel = ctx.message.channel
@@ -93,7 +91,7 @@ class WaveMusic(commands.Cog):
         await ctx.send('Skipping...')
 
     @commands.command()
-    async def play(self, ctx: commands.Context, *, track: typing.Union[wavelink.YouTubeTrack, wavelink.SoundCloudTrack]):
+    async def play(self, ctx: commands.Context, *, search):
         """Play a song with the given search query.
 
         If not connected, connect to our voice channel.
@@ -103,21 +101,20 @@ class WaveMusic(commands.Cog):
         if state.voice is None:
             success = await ctx.invoke(self.join)
             if not success:
+                await ctx.send("Couldn't join the voice channel!")
                 return
-        #try:
-        #    track = await wavelink.SearchableTrack.convert(ctx, search)
-        #except:
-        #    await ctx.send(f"No results found.")
-        #    return
+
+        track = await wavelink.YouTubeTrack.search(query=search, return_first=True)
         if not track:
             await ctx.send(f"No results found.")
             return
-        setattr(track, "requested_by", ctx.author)
         #check if already playing, if yes, add to queue, if not, play
         if not state.is_playing():
             await state.player.play(track)
+            await ctx.send(f"Playing track: {track}")
         else:
-            state.songs.put(track)
+            await state.player.queue.put_wait(track)
+            await ctx.send(f"Added to queue: {track}")
     
     @commands.command(pass_context=True, no_pm=True)
     async def playing(self, ctx):
@@ -158,6 +155,7 @@ class WaveMusic(commands.Cog):
         state = self.get_voice_state(guild)
 
         if state.is_playing():
+            await state.player.queue.reset()
             await state.player.stop()
 
         try:

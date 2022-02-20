@@ -13,7 +13,7 @@ from .Music import WaveMusic
 
 class Bot(commands.AutoShardedBot):
     def __init__(self):
-        super().__init__(command_prefix='&')
+        super().__init__(command_prefix=commands.when_mentioned_or("&"))
 
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))

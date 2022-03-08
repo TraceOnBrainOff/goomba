@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import traceback
 
 from .cogs.Music import WaveMusic
 from .cogs.Psycho import Psycho
@@ -10,6 +11,9 @@ class Bot(commands.AutoShardedBot):
 
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))
+
+    #async def on_error(self, *args, **kwargs):
+    #    pass
 
 client = Bot()
 client.add_cog(WaveMusic(client))

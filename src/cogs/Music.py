@@ -6,18 +6,14 @@ import typing
 
 class VoiceState:
     def __init__(self, bot):
-        self.voice: wavelink.Player = None
+        self.player: wavelink.Player = None
         self.bot = bot
-        self.original_channel: discord.TextChannel = None
+        self.invoked_text_channel: discord.TextChannel = None
 
     def is_playing(self):
-        if self.voice is None:
+        if self.player is None:
             return False
-        return self.voice.is_playing()
-
-    @property
-    def player(self):
-        return self.voice
+        return self.player.is_playing()
 
     def skip(self):
         if self.is_playing():
@@ -55,11 +51,26 @@ class WaveMusic(commands.Cog):
         print(f'Node: <{node.identifier}> is ready!')
 
     @commands.Cog.listener()
-    async def on_wavelink_track_end(self, player, track, reason):
+    async def on_wavelink_track_end(self, player: wavelink.Player, track: wavelink.Track, reason):
         """Event fired when a song has ended."""
-        track = await player.queue.get_wait()
-        await player.play(track)
-        
+        #get state
+        #check if the queue is empty
+        #if yes, purge the queue and post a message
+        #if not, queue the next song, post a message
+        state = self.get_voice_state(player.guild)
+        if player.queue.is_empty:
+            await state.invoked_text_channel.send(f"Oooga booga no more shit in the queue, disconnecting")
+            await self.delete_state(player.guild)
+        else:
+            track = await player.queue.get_wait()
+            await state.invoked_text_channel.send(f"Next track: {track}")
+            await player.play(track)
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        if self.bot.user.id == member.id: #check if the member is the bot
+            if (before.channel != None) and (after.channel == None):  #check if it left the channel
+                await self.delete_state(before.guild) #evoke stop or the equivalent function for clearing stuff
 
     @commands.command(pass_context=True, no_pm=True)
     async def join(self, ctx: commands.Context):
@@ -76,7 +87,7 @@ class WaveMusic(commands.Cog):
             state.voice = await summoned_channel.connect(cls=wavelink.Player)
         else:
             await state.voice.move_to(summoned_channel)
-        state.original_channel = ctx.message.channel
+        state.invoked_text_channel = ctx.message.channel
         return True
     
     @commands.command(pass_context=True, no_pm=True)
@@ -150,8 +161,10 @@ class WaveMusic(commands.Cog):
         This also clears the queue.
         """
         guild = ctx.message.guild
-        state = self.get_voice_state(guild)
+        await self.delete_state(guild)
 
+    async def delete_state(self, guild):
+        state = self.get_voice_state(guild)
         if state.is_playing():
             await state.player.queue.reset()
             await state.player.stop()

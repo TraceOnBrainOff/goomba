@@ -15,9 +15,9 @@ class VoiceState:
             return False
         return self.player.is_playing()
 
-    def skip(self):
+    async def skip(self):
         if self.is_playing():
-            self.player.stop()
+            await self.player.stop()
 
 
 class WaveMusic(commands.Cog):
@@ -60,7 +60,7 @@ class WaveMusic(commands.Cog):
         state = self.get_voice_state(player.guild)
         if player.queue.is_empty:
             await state.invoked_text_channel.send(f"Oooga booga no more shit in the queue, disconnecting")
-            await self.delete_state(player.guild)
+            await self.delete_state(state.player.guild)
         else:
             track = await player.queue.get_wait()
             await state.invoked_text_channel.send(f"Next track: {track}")
@@ -83,10 +83,10 @@ class WaveMusic(commands.Cog):
             return False
         summoned_channel = ctx.author.voice.channel
         state = self.get_voice_state(ctx.message.guild)
-        if state.voice is None:
-            state.voice = await summoned_channel.connect(cls=wavelink.Player)
+        if state.player is None:
+            state.player = await summoned_channel.connect(cls=wavelink.Player)
         else:
-            await state.voice.move_to(summoned_channel)
+            await state.player.move_to(summoned_channel)
         state.invoked_text_channel = ctx.message.channel
         return True
     
@@ -96,7 +96,7 @@ class WaveMusic(commands.Cog):
         if not state.is_playing():
             await ctx.send('Not playing any music right now...')
             return
-        state.player.stop()
+        await state.skip()
         await ctx.send('Skipping...')
 
     @commands.command()
@@ -107,7 +107,7 @@ class WaveMusic(commands.Cog):
         """
         state = self.get_voice_state(ctx.message.guild)
         #if not connected, join
-        if state.voice is None:
+        if state.player is None:
             success = await ctx.invoke(self.join)
             if not success:
                 await ctx.send("Couldn't join the voice channel!")
@@ -178,7 +178,7 @@ class WaveMusic(commands.Cog):
     def __unload(self):
         for state in self.voice_states.values():
             try:
-                if state.voice:
-                    self.bot.loop.create_task(state.voice.disconnect())
+                if state.player:
+                    self.bot.loop.create_task(state.player.disconnect())
             except:
                 pass

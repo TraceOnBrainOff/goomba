@@ -14,10 +14,10 @@ class Psycho(commands.Cog):
     def __init__(self, bot: commands.AutoShardedBot):
         self.bot = bot
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def createActivity(ctx, activity_name='youtube'):
+    @commands.command()
+    async def createActivity(self, ctx, activity_name='youtube'):
         """Forcefully creates a Discord Activity regardless of availibility for the current guild."""
-        token_file = open('token.txt')
+        token_file = open('discord_token.txt')
         token = token_file.read() #Required for the authentication for whatever reason
         token_file.close() 
 
@@ -46,8 +46,8 @@ class Psycho(commands.Cog):
             await ctx.send("https://discord.com/invite/{0}".format(invite['code']))
         activities_file.close()
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def shitpost(ctx, *args):
+    @commands.command()
+    async def shitpost(self, ctx, *args):
         """Makes the bot angrily say stuff."""
         if ctx.author.voice != None:
             #Join all arguments into a single message

@@ -5,7 +5,7 @@ import octorest
 class OctoPrint(commands.Cog):
     def __init__(self, bot: commands.AutoShardedBot):
         self.bot = bot
-        bot.loop.create_task(self.connect_printer())
+        #bot.loop.create_task(self.connect_printer())
     
     async def connect_printer(self):
         await self.bot.wait_until_ready()

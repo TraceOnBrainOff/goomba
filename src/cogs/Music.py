@@ -62,7 +62,7 @@ class WaveMusic(commands.Cog):
             await state.invoked_text_channel.send(f"Oooga booga no more shit in the queue, disconnecting")
             await self.delete_state(state.player.guild)
         else:
-            track = await player.queue.get_wait()
+            track = player.queue.pop()
             await state.invoked_text_channel.send(f"Next track: {track}")
             await player.play(track)
 
@@ -70,7 +70,7 @@ class WaveMusic(commands.Cog):
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         if self.bot.user.id == member.id: #check if the member is the bot
             if (before.channel != None) and (after.channel == None):  #check if it left the channel
-                await self.delete_state(before.guild) #evoke stop or the equivalent function for clearing stuff
+                await self.delete_state(before.channel.guild) #evoke stop or the equivalent function for clearing stuff
 
     @commands.command(pass_context=True, no_pm=True)
     async def join(self, ctx: commands.Context):
@@ -166,6 +166,7 @@ class WaveMusic(commands.Cog):
     async def delete_state(self, guild):
         state = self.get_voice_state(guild)
         if state.is_playing():
+            print(state.player)
             await state.player.queue.reset()
             await state.player.stop()
 

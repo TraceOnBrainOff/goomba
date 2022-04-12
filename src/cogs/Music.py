@@ -120,14 +120,11 @@ class WaveMusic(commands.Cog):
                 return yt_playlist.tracks
         except:
             pass
-        try:
             spotify_playlist = []
             async for track in spotify.SpotifyTrack.iterator(query=search, type=spotify.SpotifySearchType.album):
                 spotify_playlist.append(track)
             if len(spotify_playlist)>0:
                 return spotify_playlist
-        except:
-            pass
         classes = [spotify.SpotifyTrack, wavelink.tracks.YouTubeTrack, wavelink.tracks.SoundCloudTrack]
         for cls in classes:
             try:

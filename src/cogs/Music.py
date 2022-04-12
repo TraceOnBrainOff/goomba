@@ -71,7 +71,7 @@ class WaveMusic(commands.Cog):
             await self.delete_state(state.player.guild)
         else:
             track = player.queue.get()
-            await state.invoked_text_channel.send(f"Next track: {track}")
+            await self.send_playing(track)
             await player.play(track)
 
     @commands.Cog.listener()
@@ -129,6 +129,10 @@ class WaveMusic(commands.Cog):
                     return [track]
             except:
                 pass
+
+    async def send_playing(self, track):
+        return discord.Embed(title=f"Currently playing", description=f"{track}", thumbnail=track.thumbnail)
+        
     @commands.command()
     async def play(self, ctx: commands.Context, *, search):
         """Play a song with the given search query.
@@ -149,12 +153,13 @@ class WaveMusic(commands.Cog):
             return
         #check if already playing, if yes, add to queue, if not, play
         for track in tracks:
-            if not state.is_playing():
-                await state.player.play(track)
-                await ctx.send(f"Playing track: {track}")
-            else:
-                await state.player.queue.put_wait(track)
-                await ctx.send(f"Added to queue: {track}")
+            await state.player.queue.put_wait(track)
+        queue_embed = discord.Embed(title="Queued Music", description=f"Added {len(tracks)} tracks to queue.")
+        await ctx.send(embed=queue_embed)
+        if not state.is_playing():
+            track = state.player.queue.get()
+            await state.player.play(track)
+            await self.send_playing(track)
     
     @commands.command(pass_context=True, no_pm=True)
     async def playing(self, ctx):
@@ -162,7 +167,7 @@ class WaveMusic(commands.Cog):
         if not state.is_playing():
             await ctx.send('Not playing anything.')
         else:
-            await ctx.send('Now playing {}'.format(state.player.track))
+            await self.send_playing(state.player.track)
 
     
     @commands.command(pass_context=True, no_pm=True)

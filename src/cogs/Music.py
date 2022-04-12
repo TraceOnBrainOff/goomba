@@ -118,10 +118,10 @@ class WaveMusic(commands.Cog):
             yt_playlist = await node.get_playlist(cls=wavelink.YouTubePlaylist, identifier=search)
             if yt_playlist:
                 return yt_playlist.tracks
-            spotify_playlist = []
         except:
             pass
         try:
+            spotify_playlist = []
             async for track in spotify.SpotifyTrack.iterator(query=search, type=spotify.SpotifySearchType.album):
                 spotify_playlist.put(track)
             if len(spotify_playlist)>0:

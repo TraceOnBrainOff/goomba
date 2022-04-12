@@ -71,7 +71,7 @@ class WaveMusic(commands.Cog):
             await self.delete_state(state.player.guild)
         else:
             track = player.queue.get()
-            await state.invoked_text_channel.send(embed=self.playing_embed(state.player.track))
+            await state.invoked_text_channel.send(embed=self.playing_embed(track))
             await player.play(track)
 
     @commands.Cog.listener()

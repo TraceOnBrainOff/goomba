@@ -26,10 +26,14 @@
       copy:
         content: "{{ BOT_TOKEN }}"
         dest: "{{ playbook_path_output.stdout }}/discord_token.txt"
-     - name: "Create a *.txt file with an OctoPrint token inside of it."
+    - name: "Create a *.txt file with an OctoPrint token inside of it."
       copy:
         content: "{{ OCTOPRINT_TOKEN }}"
         dest: "{{ playbook_path_output.stdout }}/octoprint_token.txt"
+    - name: "Create a *.txt file with a Spotify token inside of it."
+      copy:
+        content: "{{ SPOTIFY_CLIENT_ID }}\n{{ SPOTIFY_CLIENT_SECRET }}"
+        dest: "{{ playbook_path_output.stdout }}/spotify_token.txt"
     - name: "Create a shell script for running the bot"
       copy:
         content: "venv/bin/python3 main.py"

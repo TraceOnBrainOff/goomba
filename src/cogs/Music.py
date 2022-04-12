@@ -2,6 +2,7 @@ import asyncio
 import discord
 from discord.ext import commands
 import wavelink
+from wavelink.ext import spotify
 import typing
 
 class VoiceState:
@@ -26,16 +27,23 @@ class WaveMusic(commands.Cog):
     def __init__(self, bot: commands.AutoShardedBot):
         self.bot = bot
         self.voice_states = {}
+        token_file = open('spotify_token.txt')
+        self.spotify_client_id = token_file.readline()
+        self.spotify_client_secret = token_file.readline()
+        token_file.close()
+        self.node_pool = wavelink.NodePool()
         bot.loop.create_task(self.connect_nodes())
 
     async def connect_nodes(self):
         """Connect to our Lavalink nodes."""
         await self.bot.wait_until_ready()
-
-        await wavelink.NodePool.create_node(bot=self.bot,
+        await self.node_pool.create_node(
+            identifier="node1",
+            bot=self.bot,
             host='0.0.0.0',
             port=2333,
-            password='apeshitmonkey'
+            password='apeshitmonkey',
+            spotify_client=spotify.SpotifyClient(client_id=self.spotify_client_id, client_secret=self.spotify_client_secret)
         )
 
     def get_voice_state(self, server):
@@ -62,7 +70,7 @@ class WaveMusic(commands.Cog):
             await state.invoked_text_channel.send(f"Oooga booga no more shit in the queue, disconnecting")
             await self.delete_state(state.player.guild)
         else:
-            track = player.queue.pop()
+            track = player.queue.get()
             await state.invoked_text_channel.send(f"Next track: {track}")
             await player.play(track)
 
@@ -99,6 +107,28 @@ class WaveMusic(commands.Cog):
         await state.skip()
         await ctx.send('Skipping...')
 
+    async def get_tracks_from_search(self, search):
+        node = self.node_pool.nodes.get("node1")
+        try:
+            yt_playlist = await node.get_playlist(cls=wavelink.YouTubePlaylist, identifier=search)
+            if yt_playlist:
+                return yt_playlist.tracks
+            spotify_playlist = []
+        
+            async for track in spotify.SpotifyTrack.iterator(query=search, type=spotify.SpotifySearchType.album):
+                spotify_playlist.put(track)
+            if len(spotify_playlist)>0:
+                return spotify_playlist
+        except:
+            pass
+        classes = [spotify.SpotifyTrack, wavelink.tracks.YouTubeTrack, wavelink.tracks.SoundCloudTrack]
+        for cls in classes:
+            try:
+                track = await cls.search(query=search, return_first=True)
+                if track:
+                    return [track]
+            except:
+                pass
     @commands.command()
     async def play(self, ctx: commands.Context, *, search):
         """Play a song with the given search query.
@@ -113,17 +143,18 @@ class WaveMusic(commands.Cog):
                 await ctx.send("Couldn't join the voice channel!")
                 return
 
-        track = await wavelink.YouTubeTrack.search(query=search, return_first=True)
-        if not track:
+        tracks = await self.get_tracks_from_search(search)
+        if not tracks:
             await ctx.send(f"No results found.")
             return
         #check if already playing, if yes, add to queue, if not, play
-        if not state.is_playing():
-            await state.player.play(track)
-            await ctx.send(f"Playing track: {track}")
-        else:
-            await state.player.queue.put_wait(track)
-            await ctx.send(f"Added to queue: {track}")
+        for track in tracks:
+            if not state.is_playing():
+                await state.player.play(track)
+                await ctx.send(f"Playing track: {track}")
+            else:
+                await state.player.queue.put_wait(track)
+                await ctx.send(f"Added to queue: {track}")
     
     @commands.command(pass_context=True, no_pm=True)
     async def playing(self, ctx):
@@ -166,8 +197,7 @@ class WaveMusic(commands.Cog):
     async def delete_state(self, guild):
         state = self.get_voice_state(guild)
         if state.is_playing():
-            print(state.player)
-            await state.player.queue.reset()
+            state.player.queue.reset()
             await state.player.stop()
 
         try:

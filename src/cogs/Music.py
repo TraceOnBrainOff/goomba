@@ -131,7 +131,10 @@ class WaveMusic(commands.Cog):
                 pass
 
     def playing_embed(self, track):
-        return discord.Embed(title=f"Currently playing", description=f"{track}", thumbnail=track.thumbnail)
+        emb = discord.Embed(title=f"Currently playing", description=f"{track}")
+        if track.thumbnail:
+            emb.set_thumbnail(track.thumbnail)
+        return emb
         
     @commands.command()
     async def play(self, ctx: commands.Context, *, search):

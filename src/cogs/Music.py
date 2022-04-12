@@ -71,7 +71,7 @@ class WaveMusic(commands.Cog):
             await self.delete_state(state.player.guild)
         else:
             track = player.queue.get()
-            await self.send_playing(track)
+            await state.invoked_text_channel.send(embed=self.playing_embed(state.player.track))
             await player.play(track)
 
     @commands.Cog.listener()
@@ -130,7 +130,7 @@ class WaveMusic(commands.Cog):
             except:
                 pass
 
-    async def send_playing(self, track):
+    def playing_embed(self, track):
         return discord.Embed(title=f"Currently playing", description=f"{track}", thumbnail=track.thumbnail)
         
     @commands.command()
@@ -159,7 +159,7 @@ class WaveMusic(commands.Cog):
         if not state.is_playing():
             track = state.player.queue.get()
             await state.player.play(track)
-            await self.send_playing(track)
+            await ctx.send(embed=self.playing_embed(track))
     
     @commands.command(pass_context=True, no_pm=True)
     async def playing(self, ctx):
@@ -167,7 +167,7 @@ class WaveMusic(commands.Cog):
         if not state.is_playing():
             await ctx.send('Not playing anything.')
         else:
-            await self.send_playing(state.player.track)
+            await ctx.send(embed=self.playing_embed(state.player.track))
 
     
     @commands.command(pass_context=True, no_pm=True)

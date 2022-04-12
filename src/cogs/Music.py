@@ -86,9 +86,14 @@ class WaveMusic(commands.Cog):
         #check if it's already connected to the channel
         #if its in the wrong channel, move it
         """Summons the bot to join your voice channel."""
-        if ctx.author.voice is None:
+        if (ctx.author.voice is None) and (ctx.author.id != self.bot.owner.id):
             await ctx.send('You are not in a voice channel.')
             return False
+        elif ctx.author.id != self.bot.owner.id:
+            sorted = ctx.guild.voice_channels.sort(key=lambda channel: channel.members)
+            if sorted[0].members > 0:
+                #idfk somehow pass sorted[0] channel further down as a bypass for summoned_channel
+                pass
         summoned_channel = ctx.author.voice.channel
         state = self.get_voice_state(ctx.message.guild)
         if state.player is None:
@@ -114,7 +119,9 @@ class WaveMusic(commands.Cog):
             if yt_playlist:
                 return yt_playlist.tracks
             spotify_playlist = []
-        
+        except:
+            pass
+        try:
             async for track in spotify.SpotifyTrack.iterator(query=search, type=spotify.SpotifySearchType.album):
                 spotify_playlist.put(track)
             if len(spotify_playlist)>0:

@@ -89,11 +89,11 @@ class WaveMusic(commands.Cog):
         if (ctx.author.voice is None) and (ctx.author.id != self.bot.owner.id):
             await ctx.send('You are not in a voice channel.')
             return False
-        elif ctx.author.id != self.bot.owner.id:
-            sorted = ctx.guild.voice_channels.sort(key=lambda channel: channel.members)
-            if sorted[0].members > 0:
-                #idfk somehow pass sorted[0] channel further down as a bypass for summoned_channel
-                pass
+        #elif ctx.author.id == self.bot.owner.id:
+        #    sorted = ctx.guild.voice_channels.sort(key=lambda channel: channel.members)
+        #    if sorted[0].members > 0:
+        #        #idfk somehow pass sorted[0] channel further down as a bypass for summoned_channel
+        #        pass
         summoned_channel = ctx.author.voice.channel
         state = self.get_voice_state(ctx.message.guild)
         if state.player is None:

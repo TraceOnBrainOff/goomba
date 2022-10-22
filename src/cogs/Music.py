@@ -12,14 +12,15 @@ class VoiceState:
         self.bot = parent.bot
         self.wave_music = parent
         self.invoked_text_channel: discord.TextChannel = None
-        self.playing_embed_message = None
+        self.message_player = None
 
     async def create_player(self):
         self.player_view = PlayerView(self)
-        self.message_player = await self.invoked_text_channel.send(
-            embed=discord.Embed(title="Goomba Player", description="Use the buttons below..."),
-            view = PlayerView(self)
-        )
+        if self.message_player == None:
+            self.message_player = await self.invoked_text_channel.send(
+                embed=discord.Embed(title="Goomba Player", description="Use the buttons below..."),
+                view = PlayerView(self)
+            )
 
     def is_playing(self):
         if self.player is None:
@@ -29,7 +30,7 @@ class VoiceState:
     async def skip(self):
         if self.is_playing():
             await self.player.stop()
-            await self.invoked_text_channel.send(embed=discord.Embed(title=f"Skipping track..."))
+            await self.invoked_text_channel.send(embed=discord.Embed(title=f"Skipping track..."), delete_after=30)
 
     async def stop(self):
         if self.is_playing():
@@ -42,7 +43,7 @@ class VoiceState:
         await self.player.set_pause(not self.player.is_paused())
 
     async def disconnect_message(self):
-        await self.invoked_text_channel.send(embed=discord.Embed(title=f"Empty Queue", description="Disconnecting."))
+        await self.invoked_text_channel.send(embed=discord.Embed(title=f"Empty Queue", description="Disconnecting."), delete_after=30)
 
     def playing_embed(self, track):
         emb = discord.Embed(title=f"Currently playing", description=f"{track}")
@@ -177,7 +178,7 @@ class WaveMusic(commands.Cog):
             await self.delete_state(state.player.guild)
         else:
             track = player.queue.get()
-            await self.state.new_track_callback(track)
+            await state.new_track_callback(track)
             await player.play(track)
 
     @commands.Cog.listener()
@@ -186,14 +187,14 @@ class WaveMusic(commands.Cog):
             if (before.channel != None) and (after.channel == None):  #check if it left the channel
                 await self.delete_state(before.channel.guild) #evoke stop or the equivalent function for clearing stuff
 
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.hybrid_command()
     async def join(self, ctx: commands.Context):
         #check if the author is in vc
         #check if it's already connected to the channel
         #if its in the wrong channel, move it
         """Summons the bot to join your voice channel."""
         if (ctx.author.voice is None) and (ctx.author.id != self.bot.owner.id):
-            await ctx.send(embed=discord.Embed(title=f"On God...", description="You are not in a voice channel."))
+            await ctx.send(embed=discord.Embed(title=f"On God...", description="You are not in a voice channel."), delete_after=30)
             return False
         #elif ctx.author.id == self.bot.owner.id:
         #    sorted = ctx.guild.voice_channels.sort(key=lambda channel: channel.members)
@@ -209,7 +210,7 @@ class WaveMusic(commands.Cog):
         state.invoked_text_channel = ctx.message.channel
         return True
     
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.hybrid_command()
     async def skip(self, ctx):
         state = await self.get_voice_state(ctx.message.guild)
         await state.skip()
@@ -260,7 +261,7 @@ class WaveMusic(commands.Cog):
             "spotify": sp,
         }
         
-    @commands.command()
+    @commands.hybrid_command()
     async def play(self, ctx: commands.Context, *, search):
         """Play a song with the given search query.
 
@@ -271,7 +272,7 @@ class WaveMusic(commands.Cog):
         if state.player is None:
             success = await ctx.invoke(self.join)
             if not success:
-                await ctx.send(embed=discord.Embed(title=f"On God...", description="Couldn't join the voice channel!"))
+                await ctx.send(embed=discord.Embed(title=f"On God...", description="Couldn't join the voice channel!"), delete_after=30)
                 return
 
 
@@ -280,13 +281,13 @@ class WaveMusic(commands.Cog):
         services_found = len(results_map.keys())
         #print(services_found)
         if services_found == 0:
-            await ctx.send(embed=discord.Embed(title="On God...", description="No results found"))
+            await ctx.send(embed=discord.Embed(title="On God...", description="No results found"), delete_after=30)
             return
         elif services_found == 1:
             sole_key = list(results_map.keys())[0]
             await self.queue_tracks(state, results_map.get(sole_key, [])) #
         elif services_found > 1:
-            await ctx.send(embed=discord.Embed(title="Found multiple sources", description="Choose your source below"), view=ServiceSelector(self, state, results_map))
+            await ctx.send(embed=discord.Embed(title="Found multiple sources", description="Choose your source below"), view=ServiceSelector(self, state, results_map), delete_after=30)
        
     async def queue_tracks(self, state: VoiceState, sub_tree): #subtree: {track: wavelink track and/or playlist: list(wavelink track)}
         #check if already playing, if yes, add to queue, if not, play
@@ -300,19 +301,19 @@ class WaveMusic(commands.Cog):
             tracks = tracks+playlist
         for track in tracks:
             await state.player.queue.put_wait(track)
-        await state.invoked_text_channel.send(embed=discord.Embed(title="Queued Music", description=f"Added {len(tracks)} tracks to queue."))
+        await state.invoked_text_channel.send(embed=discord.Embed(title="Queued Music", description=f"Added {len(tracks)} tracks to queue."), delete_after=15)
         if not state.is_playing():
             track = state.player.queue.get()
             await state.player.play(track)
             await state.new_track_callback(track)
 
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.hybrid_command()
     async def pause(self, ctx):
         """Pauses the currently played song."""
         state = await self.get_voice_state(ctx.message.guild)
         await state.pause_resume()
 
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.hybrid_command()
     async def stop(self, ctx):
         """Stops playing audio and leaves the voice channel.
         This also clears the queue.

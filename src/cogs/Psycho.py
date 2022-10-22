@@ -5,6 +5,7 @@ import time
 import random
 import math
 import json
+import urllib.request
 import requests
 import re
 import datetime
@@ -13,6 +14,17 @@ import subprocess as sp
 class Psycho(commands.Cog):
     def __init__(self, bot: commands.AutoShardedBot):
         self.bot = bot
+
+    @commands.Cog.listener("on_message")
+    async def insult_bots(self, message: discord.Message): #bot acting as advertised
+        if not message.author.bot:
+            return
+        if message.author.id == self.bot.user.id:
+            return
+        with urllib.request.urlopen("https://evilinsult.com/generate_insult.php?lang=en&type=json") as url:
+            data = json.load(url)
+            insult = data.get('insult', "On god...")
+            await message.reply(insult, mention_author=True)
 
     @commands.command()
     async def createActivity(self, ctx, activity_name='youtube'):

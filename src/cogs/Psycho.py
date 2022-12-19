@@ -10,10 +10,13 @@ import requests
 import re
 import datetime
 import subprocess as sp
+from urllib.parse import urlparse # for python 3+ use: from urllib.parse import urlparse
+import psycopg2
 
 class Psycho(commands.Cog):
     def __init__(self, bot: commands.AutoShardedBot):
         self.bot = bot
+        self.meme_database_url = 'postgres://bgblvevu:kRNuONH2_nMNzcR3IgMt2-QER53_RhbV@dumbo.db.elephantsql.com/bgblvevu'
 
     @commands.Cog.listener("on_message")
     async def insult_bots(self, message: discord.Message): #bot acting as advertised
@@ -24,7 +27,31 @@ class Psycho(commands.Cog):
         with urllib.request.urlopen("https://evilinsult.com/generate_insult.php?lang=en&type=json") as url:
             data = json.load(url)
             insult = data.get('insult', "On god...")
-            await message.reply(insult, mention_author=True)
+            await message.reply(insult, mention_author=True, delete_after=30)
+
+    @commands.hybrid_command()
+    async def neveser(self, ctx: commands.Context):
+        try:
+            token_file = open('neveser_token.txt')
+            token = token_file.read()
+            token_file.close()
+        except:
+            print("Put a neveser token in the root folder")
+        result = urlparse(token)
+        connection = psycopg2.connect(
+            database = result.path[1:],
+            user = result.username,
+            password = result.password,
+            host = result.hostname,
+            port = result.port
+        )
+        table_name = "quote"
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        table_len = cursor.fetchone()
+        cursor.execute(f"SELECT * FROM {table_name} WHERE ID={random.randint(1,table_len[0])}")
+        quote = cursor.fetchone()
+        await ctx.send(embed=discord.Embed(title="Neveser says", description=quote[1]))
 
     @commands.command()
     async def createActivity(self, ctx, activity_name='youtube'):

@@ -105,7 +105,7 @@ class StopButton(ui.Button):
 
 class ServiceSelector(ui.View):
     def __init__(self, wave_music, voice_state, service_results: dict):
-        super().__init__(timeout=180)
+        super().__init__(timeout=30)
         self.wave_music = wave_music
         self.voice_state = voice_state
         self.service_results = service_results
@@ -193,14 +193,9 @@ class WaveMusic(commands.Cog):
         #check if it's already connected to the channel
         #if its in the wrong channel, move it
         """Summons the bot to join your voice channel."""
-        if (ctx.author.voice is None) and (ctx.author.id != self.bot.owner.id):
+        if (ctx.author.voice is None):
             await ctx.send(embed=discord.Embed(title=f"On God...", description="You are not in a voice channel."), delete_after=30)
             return False
-        #elif ctx.author.id == self.bot.owner.id:
-        #    sorted = ctx.guild.voice_channels.sort(key=lambda channel: channel.members)
-        #    if sorted[0].members > 0:
-        #        #idfk somehow pass sorted[0] channel further down as a bypass for summoned_channel
-        #        pass
         summoned_channel = ctx.author.voice.channel
         state = await self.get_voice_state(ctx.message.guild)
         if state.player is None:
@@ -219,14 +214,14 @@ class WaveMusic(commands.Cog):
         node = self.node_pool.nodes.get("node1")
         youtube_tracklist = {}
         try:
-            #yt_playlist = await node.get_playlist(cls=wavelink.YouTubePlaylist, identifier=search)
-            #if yt_playlist:
-            #    youtube_tracklist["playlist"] = yt_playlist.tracks
+            yt_playlist = await node.get_playlist(cls=wavelink.YouTubePlaylist, identifier=search)
+            if yt_playlist:
+                youtube_tracklist["playlist"] = yt_playlist.tracks
             yt_track = await wavelink.YouTubeTrack.search(query=search, return_first=True)
             youtube_tracklist["track"] = [yt_track]
             return youtube_tracklist
         except Exception as e:
-            #print(e)
+            print(e)
             return
     
     async def sc_search(self, search):
@@ -251,7 +246,6 @@ class WaveMusic(commands.Cog):
             return
 
     async def search_services(self, search):
-        #print(search)
         y = await self.yt_search(search)
         sc = await self.sc_search(search)
         sp = await self.spot_search(search)
@@ -268,22 +262,19 @@ class WaveMusic(commands.Cog):
         If not connected, connect to our voice channel.
         """
         state = await self.get_voice_state(ctx.message.guild)
+        results_map = await self.search_services(search) #keys are services, values are lists with tracks
+        results_map = {k: v for k, v in results_map.items() if v is not None} #filter out nonetypes
+        services_found = len(results_map.keys())
+        if services_found == 0:
+            await ctx.send(embed=discord.Embed(title="On God...", description="No results found"), delete_after=30)
+            return
         #if not connected, join
         if state.player is None:
             success = await ctx.invoke(self.join)
             if not success:
                 await ctx.send(embed=discord.Embed(title=f"On God...", description="Couldn't join the voice channel!"), delete_after=30)
                 return
-
-
-        results_map = await self.search_services(search) #keys are services, values are lists with tracks
-        results_map = {k: v for k, v in results_map.items() if v is not None} #filter out nonetypes
-        services_found = len(results_map.keys())
-        #print(services_found)
-        if services_found == 0:
-            await ctx.send(embed=discord.Embed(title="On God...", description="No results found"), delete_after=30)
-            return
-        elif services_found == 1:
+        if services_found == 1:
             sole_key = list(results_map.keys())[0]
             await self.queue_tracks(state, results_map.get(sole_key, [])) #
         elif services_found > 1:
@@ -291,17 +282,16 @@ class WaveMusic(commands.Cog):
        
     async def queue_tracks(self, state: VoiceState, sub_tree): #subtree: {track: wavelink track and/or playlist: list(wavelink track)}
         #check if already playing, if yes, add to queue, if not, play
+        print(sub_tree)
+        if type(sub_tree) == dict:
+            if len(list(sub_tree.keys())) > 1:
+                await state.invoked_text_channel.send(embed=discord.Embed(title="Found multiple result types", description="Choose which below"), view=ServiceSelector(self, state, sub_tree), delete_after=30)
+                return #if it contains both a playlist and a track, do the selector and recursively call the function (dict is knocked down to a list)
+            sub_tree = list(sub_tree.values())[0] #knocks it down from a dict to a list of track/tracks
         await state.create_player()
-        tracks = []
-        track = sub_tree.get('track', None)
-        playlist = sub_tree.get('playlist', None)
-        if track:
-            tracks = tracks+track
-        if playlist:
-            tracks = tracks+playlist
-        for track in tracks:
+        for track in sub_tree:
             await state.player.queue.put_wait(track)
-        await state.invoked_text_channel.send(embed=discord.Embed(title="Queued Music", description=f"Added {len(tracks)} tracks to queue."), delete_after=15)
+        await state.invoked_text_channel.send(embed=discord.Embed(title="Queued Music", description=f"Added {len(sub_tree)} tracks to queue."), delete_after=15)
         if not state.is_playing():
             track = state.player.queue.get()
             await state.player.play(track)

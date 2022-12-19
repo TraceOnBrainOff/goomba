@@ -131,6 +131,7 @@ run.sh
 discord_token.txt
 octoprint_token.txt
 spotify_token.txt
+neveser_token.txt
 assets/dw_playlist/downloaded
 assets/dw_playlist/rate_sampled
 assets/dw_playlist/processed

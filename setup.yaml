@@ -15,6 +15,7 @@
           - libnacl-dev
           - python3-dev
           - default-jdk
+          - postgresql
         state: latest
         update_cache: true
     - name: "Create venv with required modules."

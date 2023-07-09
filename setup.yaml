@@ -16,6 +16,7 @@
           - python3-dev
           - default-jdk
           - postgresql
+          - python3
         state: latest
         update_cache: true
     - name: "Create venv with required modules."
@@ -27,43 +28,9 @@
       copy:
         content: "{{ BOT_TOKEN }}"
         dest: "{{ playbook_path_output.stdout }}/discord_token.txt"
-    - name: "Create a *.txt file with an OctoPrint token inside of it."
-      copy:
-        content: "{{ OCTOPRINT_TOKEN }}"
-        dest: "{{ playbook_path_output.stdout }}/octoprint_token.txt"
-    - name: "Create a *.txt file with a Spotify token inside of it."
-      copy:
-        content: "{{ SPOTIFY_CLIENT_ID }}\n{{ SPOTIFY_CLIENT_SECRET }}"
-        dest: "{{ playbook_path_output.stdout }}/spotify_token.txt"
     - name: "Create a shell script for running the bot"
       copy:
         content: "venv/bin/python3 main.py"
         dest: "{{ playbook_path_output.stdout }}/run.sh"
         mode: u=rwx,g=rwx,o=rwx
-    - name: "Create a copy of the template *.service file"
-      copy:
-        src: "{{ playbook_path_output.stdout }}/GOOMBA.service"
-        dest: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
-        mode: u=rwx,g=rwx,o=rwx
-    - name: "Replace the working directory in the *.service file."
-      lineinfile:
-        path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
-        regexp: 'WorkingDirectory'
-        line: "WorkingDirectory={{ playbook_path_output.stdout }}"
-        mode: '0644'
-    - name: "Replace the ExecStart param in the *.service file."
-      lineinfile:
-        path: "{{ playbook_path_output.stdout }}/GOOMBA_tmp.service"
-        regexp: 'ExecStart'
-        line: "ExecStart={{ playbook_path_output.stdout }}/venv/bin/python3 {{ playbook_path_output.stdout }}/main.py"
-        mode: '0644'
-    - name: "Move the tmp file to the proper service folder."
-      command: mv {{ playbook_path_output.stdout }}/GOOMBA_tmp.service /etc/systemd/system/GOOMBA.service
-      become: yes
-    - name: "Setting permissions for the file."
-      command: chmod 644 /etc/systemd/system/GOOMBA.service
-    - name: "Enabling autostart."
-      command: systemctl daemon-reload
-      command: systemctl enable GOOMBA
-      command: systemctl start GOOMBA
       become: yes

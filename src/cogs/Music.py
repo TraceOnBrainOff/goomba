@@ -3,8 +3,8 @@ import discord
 from discord.ext import commands
 from discord import ui as ui
 import wavelink
-from wavelink.ext import spotify
 import typing
+import os
 
 class VoiceState:
     def __init__(self, parent):
@@ -133,10 +133,6 @@ class WaveMusic(commands.Cog):
     def __init__(self, bot: commands.AutoShardedBot):
         self.bot = bot
         self.voice_states = {}
-        token_file = open('spotify_token.txt')
-        self.spotify_client_id = token_file.readline()
-        self.spotify_client_secret = token_file.readline()
-        token_file.close()
         self.node_pool = wavelink.NodePool()
 
     @commands.Cog.listener("on_ready")
@@ -148,8 +144,7 @@ class WaveMusic(commands.Cog):
             bot=self.bot,
             host='0.0.0.0',
             port=2333,
-            password='apeshitmonkey',
-            spotify_client=spotify.SpotifyClient(client_id=self.spotify_client_id, client_secret=self.spotify_client_secret)
+            password=os.getenv('LAVALINK_PASSWORD')
         )
 
     async def get_voice_state(self, server):
@@ -234,25 +229,13 @@ class WaveMusic(commands.Cog):
             #print(e)
             return
 
-    async def spot_search(self, search):
-        spotify_tracklist = {}
-        try:
-            spotify_tracklist["album"] = await spotify.SpotifyTrack.search(query=search)
-            spotify_track = await spotify.SpotifyTrack.search(query=search, return_first=True)
-            spotify_tracklist["track"] = [spotify_track]
-            return spotify_tracklist
-        except Exception as e:
-            #print(e)
-            return
-
     async def search_services(self, search):
         y = await self.yt_search(search)
         sc = await self.sc_search(search)
         sp = await self.spot_search(search)
         return {
             "youtube": y,
-            "soundcloud": sc,
-            "spotify": sp,
+            "soundcloud": sc
         }
         
     @commands.hybrid_command()

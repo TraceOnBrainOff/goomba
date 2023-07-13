@@ -1,8 +1,19 @@
+version: "3.8"
 services:
-  app:
-    build: .
-    command: python3 src/main.py
-    ports:
-      - "8080:8080"
-    volumes:
-      - .:/app
+  iposter:
+    image: goomba:latest
+    restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN=/run/secrets/discord_token
+      - LAVALINK_PASSWORD=/run/secrets/lavalink_password
+    secrets:
+      - discord_token
+      - lavalink_password
+    depends_on:
+      - lavalink
+
+secrets:
+  discord_token:
+    file: discord_token.txt
+  lavalink_password:
+    file: lavalink_password.txt

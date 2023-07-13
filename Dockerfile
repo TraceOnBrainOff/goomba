@@ -2,6 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /usr/src/app
 
+ENV DISCORD_TOKEN=tmp
+ENV LAVALINK_PASSWORD=tmp
+
 #Installing required packages
 COPY ./packages.txt ./packages.txt
 RUN apt-get update

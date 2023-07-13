@@ -9,7 +9,7 @@ discord.py
 idna
 lavalink
 multidict
-pkg_resources
+setuptools
 pycparser
 PyNaCl
 requests

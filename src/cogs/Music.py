@@ -138,14 +138,12 @@ class WaveMusic(commands.Cog):
     @commands.Cog.listener("on_ready")
     async def connect_nodes(self):
         """Connect to our Lavalink nodes."""
+        lavalink_password = ""
+        with open("/run/secrets/lavalink_password") as f:
+            lavalink_password = f.read()
         await self.bot.wait_until_ready()
-        await self.node_pool.create_node(
-            identifier="node1",
-            bot=self.bot,
-            host='0.0.0.0',
-            port=2333,
-            password=os.getenv('LAVALINK_PASSWORD')
-        )
+        node: wavelink.Node = wavelink.Node(id='node1', uri='lavalink:2333', password=lavalink_password)
+        await wavelink.NodePool.connect(client=self.bot, nodes=[node])
 
     async def get_voice_state(self, server):
         state = self.voice_states.get(str(server.id))
@@ -157,10 +155,10 @@ class WaveMusic(commands.Cog):
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
         """Event fired when a node has finished connecting."""
-        print(f'Node: <{node.identifier}> is ready!')
+        #print(f'Node: <{node.identifier}> is ready!')
 
     @commands.Cog.listener()
-    async def on_wavelink_track_end(self, player: wavelink.Player, track: wavelink.Track, reason):
+    async def on_wavelink_track_end(self, player: wavelink.Player, track: wavelink.tracks.Playable, reason):
         """Event fired when a song has ended."""
         #get state
         #check if the queue is empty
@@ -174,7 +172,7 @@ class WaveMusic(commands.Cog):
         else:
             track = player.queue.get()
             await state.new_track_callback(track)
-            await player.play(track)
+            await player.play(track[0])
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
@@ -209,10 +207,10 @@ class WaveMusic(commands.Cog):
         node = self.node_pool.nodes.get("node1")
         youtube_tracklist = {}
         try:
-            yt_playlist = await node.get_playlist(cls=wavelink.YouTubePlaylist, identifier=search)
+            yt_playlist = await node.get_playlist(cls=wavelink.YouTubePlaylist, query=search)
             if yt_playlist:
                 youtube_tracklist["playlist"] = yt_playlist.tracks
-            yt_track = await wavelink.YouTubeTrack.search(query=search, return_first=True)
+            yt_track = await wavelink.YouTubeTrack.search(search)
             youtube_tracklist["track"] = [yt_track]
             return youtube_tracklist
         except Exception as e:
@@ -222,7 +220,7 @@ class WaveMusic(commands.Cog):
     async def sc_search(self, search):
         soundcloud_tracklist = {}
         try:
-            sc_track = await wavelink.SoundCloudTrack.search(query=search, return_first=True)
+            sc_track = await wavelink.SoundCloudTrack.search(search)
             soundcloud_tracklist["track"] = [sc_track]
             return soundcloud_tracklist
         except Exception as e:
@@ -232,7 +230,6 @@ class WaveMusic(commands.Cog):
     async def search_services(self, search):
         y = await self.yt_search(search)
         sc = await self.sc_search(search)
-        sp = await self.spot_search(search)
         return {
             "youtube": y,
             "soundcloud": sc
@@ -244,24 +241,34 @@ class WaveMusic(commands.Cog):
 
         If not connected, connect to our voice channel.
         """
-        state = await self.get_voice_state(ctx.message.guild)
-        results_map = await self.search_services(search) #keys are services, values are lists with tracks
-        results_map = {k: v for k, v in results_map.items() if v is not None} #filter out nonetypes
-        services_found = len(results_map.keys())
-        if services_found == 0:
-            await ctx.send(embed=discord.Embed(title="On God...", description="No results found"), delete_after=30)
+        tracks = await wavelink.YouTubeTrack.search(search)
+        if not tracks:
+            # No tracks were found, do something here...
             return
-        #if not connected, join
-        if state.player is None:
-            success = await ctx.invoke(self.join)
-            if not success:
-                await ctx.send(embed=discord.Embed(title=f"On God...", description="Couldn't join the voice channel!"), delete_after=30)
-                return
-        if services_found == 1:
-            sole_key = list(results_map.keys())[0]
-            await self.queue_tracks(state, results_map.get(sole_key, [])) #
-        elif services_found > 1:
-            await ctx.send(embed=discord.Embed(title="Found multiple sources", description="Choose your source below"), view=ServiceSelector(self, state, results_map), delete_after=30)
+
+        track = tracks[0]
+        summoned_channel = ctx.author.voice.channel
+        player = await summoned_channel.connect(cls=wavelink.Player)
+        await player.play(track)
+
+        #state = await self.get_voice_state(ctx.message.guild)
+        #results_map = await self.search_services(search) #keys are services, values are lists with tracks
+        #results_map = {k: v for k, v in results_map.items() if v is not None} #filter out nonetypes
+        #services_found = len(results_map.keys())
+        #if services_found == 0:
+        #    await ctx.send(embed=discord.Embed(title="On God...", description="No results found"), delete_after=30)
+        #    return
+        ##if not connected, join
+        #if state.player is None:
+        #    success = await ctx.invoke(self.join)
+        #    if not success:
+        #        await ctx.send(embed=discord.Embed(title=f"On God...", description="Couldn't join the voice channel!"), delete_after=30)
+        #        return
+        #if services_found == 1:
+        #    sole_key = list(results_map.keys())[0]
+        #    await self.queue_tracks(state, results_map.get(sole_key, [])) #
+        #elif services_found > 1:
+        #    await ctx.send(embed=discord.Embed(title="Found multiple sources", description="Choose your source below"), view=ServiceSelector(self, state, results_map), delete_after=30)
        
     async def queue_tracks(self, state: VoiceState, sub_tree): #subtree: {track: wavelink track and/or playlist: list(wavelink track)}
         #check if already playing, if yes, add to queue, if not, play
@@ -277,7 +284,7 @@ class WaveMusic(commands.Cog):
         await state.invoked_text_channel.send(embed=discord.Embed(title="Queued Music", description=f"Added {len(sub_tree)} tracks to queue."), delete_after=15)
         if not state.is_playing():
             track = state.player.queue.get()
-            await state.player.play(track)
+            await state.player.play(track[0])
             await state.new_track_callback(track)
 
     @commands.hybrid_command()

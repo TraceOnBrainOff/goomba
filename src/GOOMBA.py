@@ -2,10 +2,9 @@ import discord
 from discord.ext import commands
 import traceback
 
-from .cogs.Music import WaveMusic
-from .cogs.Psycho import Psycho
-from .cogs.OctoPrint import OctoPrint
-from .cogs.Admin import Admin
+from cogs.Music import WaveMusic
+from cogs.Psycho import Psycho
+from cogs.Admin import Admin
 
 class Bot(commands.AutoShardedBot):
     def __init__(self):
@@ -16,7 +15,6 @@ class Bot(commands.AutoShardedBot):
     async def setup_hook(self) -> None:
         await self.add_cog(WaveMusic(self))
         await self.add_cog(Psycho(self))
-        await self.add_cog(OctoPrint(self))
         await self.add_cog(Admin(self))
         return await super().setup_hook()
 

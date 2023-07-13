@@ -3,4 +3,7 @@ import json
 from GOOMBA import *
 import os
 
-client.run(os.getenv('DISCORD_TOKEN'))
+token = ""
+with open("/run/secrets/discord_token") as f:
+    token = f.read()
+client.run(token)

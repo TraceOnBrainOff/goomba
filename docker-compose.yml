@@ -1,15 +1,12 @@
 version: "3.8"
 services:
-  iposter:
+  goomba:
     image: goomba:latest
     restart: unless-stopped
-    environment:
-      - DISCORD_TOKEN=/run/secrets/discord_token
-      - LAVALINK_PASSWORD=/run/secrets/lavalink_password
     secrets:
       - discord_token
       - lavalink_password
-    depends_on:
+    networks:
       - lavalink
 
 secrets:
@@ -17,3 +14,8 @@ secrets:
     file: discord_token.txt
   lavalink_password:
     file: lavalink_password.txt
+
+networks:
+  lavalink:
+    name: lavalink
+    external: true

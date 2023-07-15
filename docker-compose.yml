@@ -2,6 +2,8 @@ version: "3.8"
 services:
   goomba:
     image: goomba:latest
+    build:
+      dockerfile: ./Dockerfile
     restart: unless-stopped
     secrets:
       - discord_token

@@ -29,8 +29,8 @@ class VoiceState:
 
     async def skip(self):
         if self.is_playing():
-            await self.player.stop()
-            await self.invoked_text_channel.send(embed=discord.Embed(title=f"Skipping track..."), delete_after=30)
+            await self.player.stop(force = True)
+            await self.invoked_text_channel.send(embed=discord.Embed(title=f"Skipping track..."), delete_after=5)
 
     async def stop(self):
         if self.is_playing():
@@ -40,10 +40,13 @@ class VoiceState:
             await self.wave_music.delete_state(self.player.guild)
 
     async def pause_resume(self):
-        await self.player.set_pause(not self.player.is_paused())
+        if not self.player.is_paused():
+            await self.player.pause()
+        else:
+            await self.player.resume()
 
     async def disconnect_message(self):
-        await self.invoked_text_channel.send(embed=discord.Embed(title=f"Empty Queue", description="Disconnecting."), delete_after=30)
+        await self.invoked_text_channel.send(embed=discord.Embed(title=f"Empty Queue", description="Disconnecting."), delete_after=5)
 
     def playing_embed(self, track):
         emb = discord.Embed(title=f"Currently playing", description=f"{track}")
@@ -88,6 +91,10 @@ class PauseButton(ui.Button):
         self.voice_state = voice_state
     async def callback(self, interaction: discord.Interaction):
         await self.voice_state.pause_resume()
+        try: #All three of these can sometimes be responded to multiple times so lets ignore the exception
+            await interaction.response.defer()
+        except InteractionResponded:
+            pass
 
 class SkipButton(ui.Button):
     def __init__(self, voice_state: VoiceState):
@@ -95,6 +102,10 @@ class SkipButton(ui.Button):
         self.voice_state = voice_state
     async def callback(self, interaction: discord.Interaction):
         await self.voice_state.skip()
+        try:
+            await interaction.response.defer()
+        except InteractionResponded:
+            pass
 
 class StopButton(ui.Button):
     def __init__(self, voice_state: VoiceState):
@@ -102,30 +113,10 @@ class StopButton(ui.Button):
         self.voice_state = voice_state
     async def callback(self, interaction: discord.Interaction):
         await self.voice_state.stop()
-
-class ServiceSelector(ui.View):
-    def __init__(self, wave_music, voice_state, service_results: dict):
-        super().__init__(timeout=30)
-        self.wave_music = wave_music
-        self.voice_state = voice_state
-        self.service_results = service_results
-        self.createSelectorItems()
-    def createSelectorItems(self):
-        for service_name in self.service_results.keys():
-            self.add_item(ServiceButton(self.wave_music, self.voice_state, service_name, self.service_results.get(service_name, [])))
-        pass
-    async def on_timeout(self):
-        pass
-
-class ServiceButton(ui.Button):
-    def __init__(self, wave_music, voice_state, label, service_tracks):
-        super().__init__(style=discord.ButtonStyle.primary, label=label, disabled=False)
-        self.wave_music = wave_music
-        self.voice_state = voice_state
-        self.service_tracks = service_tracks
-    async def callback(self, interaction: discord.Interaction):
-        await self.wave_music.queue_tracks(self.voice_state, self.service_tracks)
-        self.view.stop()
+        try:
+            await interaction.response.defer()
+        except InteractionResponded:
+            pass
 
 class WaveMusic(commands.Cog):
     """Music cog to hold Wavelink related commands and listeners."""
@@ -153,26 +144,25 @@ class WaveMusic(commands.Cog):
         return state
 
     @commands.Cog.listener()
-    async def on_wavelink_node_ready(self, node: wavelink.Node):
-        """Event fired when a node has finished connecting."""
-        #print(f'Node: <{node.identifier}> is ready!')
+    async def on_wavelink_node_ready(self, node: wavelink.Node) -> None:
+        print(f"Node {node.id} is ready!")
 
     @commands.Cog.listener()
-    async def on_wavelink_track_end(self, player: wavelink.Player, track: wavelink.tracks.Playable, reason):
+    async def on_wavelink_track_end(self, payload: wavelink.TrackEventPayload):
         """Event fired when a song has ended."""
         #get state
         #check if the queue is empty
         #if yes, purge the queue and post a message
         #if not, queue the next song, post a message
-        state = await self.get_voice_state(player.guild)
-        if player.queue.is_empty:
+        state = await self.get_voice_state(payload.player.guild)
+        if payload.player.queue.is_empty:
             await state.disconnect_message()
             await state.stop()
             await self.delete_state(state.player.guild)
         else:
-            track = player.queue.get()
+            track = payload.player.queue.get()
             await state.new_track_callback(track)
-            await player.play(track[0])
+            await payload.player.play(track)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
@@ -187,7 +177,7 @@ class WaveMusic(commands.Cog):
         #if its in the wrong channel, move it
         """Summons the bot to join your voice channel."""
         if (ctx.author.voice is None):
-            await ctx.send(embed=discord.Embed(title=f"On God...", description="You are not in a voice channel."), delete_after=30)
+            await ctx.send(embed=discord.Embed(title=f"On God...", description="You are not in a voice channel."), delete_after=5)
             return False
         summoned_channel = ctx.author.voice.channel
         state = await self.get_voice_state(ctx.message.guild)
@@ -196,44 +186,21 @@ class WaveMusic(commands.Cog):
         else:
             await state.player.move_to(summoned_channel)
         state.invoked_text_channel = ctx.message.channel
+        try:
+            await ctx.defer(ephemeral = True)
+        except InteractionResponded:
+            pass
         return True
     
     @commands.hybrid_command()
     async def skip(self, ctx):
         state = await self.get_voice_state(ctx.message.guild)
         await state.skip()
-
-    async def yt_search(self, search):
-        node = self.node_pool.nodes.get("node1")
-        youtube_tracklist = {}
         try:
-            yt_playlist = await node.get_playlist(cls=wavelink.YouTubePlaylist, query=search)
-            if yt_playlist:
-                youtube_tracklist["playlist"] = yt_playlist.tracks
-            yt_track = await wavelink.YouTubeTrack.search(search)
-            youtube_tracklist["track"] = [yt_track]
-            return youtube_tracklist
-        except Exception as e:
-            print(e)
-            return
-    
-    async def sc_search(self, search):
-        soundcloud_tracklist = {}
-        try:
-            sc_track = await wavelink.SoundCloudTrack.search(search)
-            soundcloud_tracklist["track"] = [sc_track]
-            return soundcloud_tracklist
-        except Exception as e:
-            #print(e)
-            return
-
-    async def search_services(self, search):
-        y = await self.yt_search(search)
-        sc = await self.sc_search(search)
-        return {
-            "youtube": y,
-            "soundcloud": sc
-        }
+            await ctx.defer(ephemeral = True)
+        except InteractionResponded:
+            pass
+        return
         
     @commands.hybrid_command()
     async def play(self, ctx: commands.Context, *, search):
@@ -241,50 +208,52 @@ class WaveMusic(commands.Cog):
 
         If not connected, connect to our voice channel.
         """
-        tracks = await wavelink.YouTubeTrack.search(search)
-        if not tracks:
-            # No tracks were found, do something here...
-            return
+        track = await self.node_pool.get_tracks(search, cls=wavelink.YouTubeTrack)
+        state = await self.get_voice_state(ctx.message.guild)
+        #if not connected, join
+        if state.player is None:
+            success = await ctx.invoke(self.join)
+            if not success:
+                await ctx.send(embed=discord.Embed(title=f"On God...", description="Couldn't join the voice channel!"), delete_after=5)
+                return
+        await self.queue_tracks(state, track)
+        try:
+            await ctx.defer(ephemeral = True)
+        except InteractionResponded:
+            pass
+        return
 
-        track = tracks[0]
-        summoned_channel = ctx.author.voice.channel
-        player = await summoned_channel.connect(cls=wavelink.Player)
-        await player.play(track)
+    @commands.hybrid_command()
+    async def playlist(self, ctx: commands.Context, *, search):
+        """Play a song with the given search query.
 
-        #state = await self.get_voice_state(ctx.message.guild)
-        #results_map = await self.search_services(search) #keys are services, values are lists with tracks
-        #results_map = {k: v for k, v in results_map.items() if v is not None} #filter out nonetypes
-        #services_found = len(results_map.keys())
-        #if services_found == 0:
-        #    await ctx.send(embed=discord.Embed(title="On God...", description="No results found"), delete_after=30)
-        #    return
-        ##if not connected, join
-        #if state.player is None:
-        #    success = await ctx.invoke(self.join)
-        #    if not success:
-        #        await ctx.send(embed=discord.Embed(title=f"On God...", description="Couldn't join the voice channel!"), delete_after=30)
-        #        return
-        #if services_found == 1:
-        #    sole_key = list(results_map.keys())[0]
-        #    await self.queue_tracks(state, results_map.get(sole_key, [])) #
-        #elif services_found > 1:
-        #    await ctx.send(embed=discord.Embed(title="Found multiple sources", description="Choose your source below"), view=ServiceSelector(self, state, results_map), delete_after=30)
+        If not connected, connect to our voice channel.
+        """
+        yt_playlist = await self.node_pool.get_playlist(search, cls=wavelink.YouTubePlaylist)
+        state = await self.get_voice_state(ctx.message.guild)
+        #if not connected, join
+        if state.player is None:
+            success = await ctx.invoke(self.join)
+            if not success:
+                await ctx.send(embed=discord.Embed(title=f"On God...", description="Couldn't join the voice channel!"), delete_after=5)
+                return
+        await self.queue_tracks(state, yt_playlist.tracks)
+        try:
+            await ctx.defer(ephemeral = True)
+        except InteractionResponded:
+            pass
+        return
        
-    async def queue_tracks(self, state: VoiceState, sub_tree): #subtree: {track: wavelink track and/or playlist: list(wavelink track)}
+    async def queue_tracks(self, state: VoiceState, tracks):
         #check if already playing, if yes, add to queue, if not, play
-        print(sub_tree)
-        if type(sub_tree) == dict:
-            if len(list(sub_tree.keys())) > 1:
-                await state.invoked_text_channel.send(embed=discord.Embed(title="Found multiple result types", description="Choose which below"), view=ServiceSelector(self, state, sub_tree), delete_after=30)
-                return #if it contains both a playlist and a track, do the selector and recursively call the function (dict is knocked down to a list)
-            sub_tree = list(sub_tree.values())[0] #knocks it down from a dict to a list of track/tracks
         await state.create_player()
-        for track in sub_tree:
+        for track in tracks:
+            print(track)
             await state.player.queue.put_wait(track)
-        await state.invoked_text_channel.send(embed=discord.Embed(title="Queued Music", description=f"Added {len(sub_tree)} tracks to queue."), delete_after=15)
+        await state.invoked_text_channel.send(embed=discord.Embed(title="Queued Music", description=f"Added {len(tracks)} tracks to queue."), delete_after=5)
         if not state.is_playing():
             track = state.player.queue.get()
-            await state.player.play(track[0])
+            await state.player.play(track)
             await state.new_track_callback(track)
 
     @commands.hybrid_command()
@@ -292,6 +261,10 @@ class WaveMusic(commands.Cog):
         """Pauses the currently played song."""
         state = await self.get_voice_state(ctx.message.guild)
         await state.pause_resume()
+        try:
+            await ctx.defer(ephemeral = True)
+        except InteractionResponded:
+            pass
 
     @commands.hybrid_command()
     async def stop(self, ctx):
@@ -301,6 +274,10 @@ class WaveMusic(commands.Cog):
         state = await self.get_voice_state(ctx.message.guild)
         await state.stop()
         await self.delete_state(ctx.message.guild)
+        try:
+            await ctx.defer(ephemeral = True)
+        except InteractionResponded:
+            pass
 
     async def delete_state(self, guild):
         state = await self.get_voice_state(guild)
